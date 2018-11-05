@@ -11,7 +11,7 @@ void Accept(char t)
 {
 	if(symbol == t)
 	{
-		printf("Accepted symbols: %c\n", symbol);
+		printf("Accepted symbol: %c\n", symbol);
 		inputFile.get(symbol);
 	}
 	else
@@ -43,6 +43,7 @@ void A()
 int main()
 {
 	done = false;
+	char test;
 	inputFile.open("input.txt");
 	if(!inputFile)
 	{
