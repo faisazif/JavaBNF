@@ -7,9 +7,22 @@ char symbol;
 bool done;
 ifstream inputFile;
 
+bool IsLastChar()
+{
+	if(inputFile.peek()	== EOF)
+		return true;
+	else
+		return false;
+}
+
 void Accept(char t)
 {
-	if(symbol == t)
+	if(inputFile.eof())
+	{
+		printf("Rejected. No more character to read");
+		exit(0);
+	}
+	else if(symbol == t)
 	{
 		printf("Accepted symbol: %c\n", symbol);
 		inputFile.get(symbol);
@@ -54,16 +67,12 @@ int main()
 	inputFile.get(symbol);
 	A();
 
-	if(inputFile.peek()	== EOF)
-	{
+	if(inputFile.eof())
 		printf("----------------------ZUCC----------------------\n\n\n");
-		done = true;
-	}
+	//if(IsLastChar())
+	//	printf("----------------------ZUCC----------------------\n\n\n");
 	else
-	{
-		inputFile.get(symbol);
 		printf("Rejected. There are still symbol: %c\n", symbol);
-	}
 	return 0;
 }
 
