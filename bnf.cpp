@@ -11,7 +11,7 @@ void Accept(char t)
 {
 	if(symbol == t)
 	{
-		printf("Accepted symbol: %c\n", symbol);
+		printf("Accepted symbols: %c\n", symbol);
 		inputFile.get(symbol);
 	}
 	else
