@@ -4,16 +4,7 @@
 using namespace std;
 
 char symbol;
-bool done;
 ifstream inputFile;
-
-bool IsLastChar()
-{
-	if(inputFile.peek()	== EOF)
-		return true;
-	else
-		return false;
-}
 
 void Accept(char t)
 {
@@ -55,8 +46,6 @@ void A()
 
 int main()
 {
-	done = false;
-	char test;
 	inputFile.open("input.txt");
 	if(!inputFile)
 	{
@@ -69,8 +58,6 @@ int main()
 
 	if(inputFile.eof())
 		printf("----------------------ZUCC----------------------\n\n\n");
-	//if(IsLastChar())
-	//	printf("----------------------ZUCC----------------------\n\n\n");
 	else
 		printf("Rejected. There are still symbol: %c\n", symbol);
 	return 0;
