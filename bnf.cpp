@@ -1,55 +1,70 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <fstream>
 
 using namespace std;
 
 char symbol;
+int errorLine;
+int errorCol;
+int defaultCol;
 ifstream inputFile;
 
-void Accept(char t)
-{
+void Accept(char t){
 	if(inputFile.eof())
 	{
-		printf("Rejected. No more character to read");
+		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
+		printf("Reason: \nNo more character to read");
 		exit(0);
 	}
 	else if(symbol == t)
 	{
-		printf("Accepted symbol: %c\n", symbol);
+		errorCol++;
 		inputFile.get(symbol);
 	}
 	else
 	{
+		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
+		printf("Reason:");
 		if(symbol == '\n')	
-			printf("Rejected. Symbol: enter\n");
+			printf("Symbol found: enter\n");
 		else
-			printf("Rejected. Symbol: %c\n", symbol);
+			printf("Symbol found: %c\n", symbol);
 		printf("Symbol should be: %c\n", t);
 		exit(0);
 	}
 }
 
-void EscapeCharacter()
-{
-	if(symbol == '\n')
-		Accept('\n');
+void EscapeCharacter(){
+	while (symbol == '\n')
+	{
+		errorLine++;
+		errorCol = defaultCol;
+		inputFile.get(symbol);
+		if(inputFile.eof())
+			break;
+	}
 }
 
-void A()
-{
-	Accept('f');
-	Accept('a');
-	Accept('i');
-	Accept('s');
-	EscapeCharacter();
+void A(){
+	while(symbol == 'f')
+	{
+		Accept('f');
+		Accept('a');
+		Accept('i');
+		Accept('s');
+		EscapeCharacter();
+	}
 }
 
 int main()
 {
+	defaultCol = 1;
+	errorLine = defaultCol;
+	errorCol = defaultCol;
 	inputFile.open("input.txt");
-	if(!inputFile)
-	{
-		printf("File not found");
+	if(!inputFile) {
+		printf("Error: File not found");
 		return 1;
 	}
 
@@ -57,9 +72,11 @@ int main()
 	A();
 
 	if(inputFile.eof())
-		printf("----------------------ZUCC----------------------\n\n\n");
-	else
-		printf("Rejected. There are still symbol: %c\n", symbol);
+		printf("\n----------------------ZUCC----------------------\n");
+	else {
+		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
+		printf("Reason:\nThere are still symbol: %c\n", symbol);
+	}
 	return 0;
 }
 
