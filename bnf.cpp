@@ -4,65 +4,129 @@
 #include <ctype.h>
 using namespace std;
 char symbol; 
-char obtainedSymbol[100]; 
+std::string obtainedSymbol; 
 int errorLine; 
 int errorCol; 
 int defaultCol; 
 ifstream inputFile;
-char c;
+char c, peekC;
 //Prototypes
 void VariableSymbol();void Letter();void Digit();
 
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
+		if(c=='\n')
+		{
+			errorCol=defaultCol;
+			errorLine++;
+		}
+		else
+			errorCol++;
 		inputFile.get(c);
 	}
 }
 
-bool IsEnder(){
-	if(inputFile.eof() || c==' ' || c=='\n' || c== '\t' || c==';' || c=='<' || c=='>' || c=='=')
+void ErrrorHandling(){
+		printf("Rejected at line %d column %d.\nSymbol: %s\n",errorLine, errorCol, obtainedSymbol.c_str());
+		exit(0);
+}
+
+bool IsEnder(char c){
+	if(inputFile.eof()) 
 		return true;
+	/*
+	else if( c==' ' || c=='\t' || c=='!'|| c=='@'|| c=='#'|| c=='%'|| c=='^'|| c=='&'|| c=='*'|| c=='('|| c==')'|| c=='-'|| c=='+'|| c=='/'
+	|| c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' ){
+		errorCol++;
+		return true;
+	}
+	*/
+	else if(c=='\n'){
+		errorCol=defaultCol;
+		errorLine++;
+		return true;
+	}
 	else
 		return false;
 }
 
-char const * GetSymbol(){
+void GetSymbol(){
+	inputFile.get(c);
+	obtainedSymbol = "";
 	SkipBlanks();
 	//identifier
 	if(isalpha(c) || c=='$' || c=='_'){
-		inputFile.get(c);
-		if(IsEnder())//if divider found
-			return "identifier";
-		while(isalpha(c)>0 || c=='$' || c=='_' || isdigit(c)){//while there are still acceptable cahrs
+		obtainedSymbol += c;
+		peekC = inputFile.peek();
+		if(IsEnder(peekC))//if divider found
+			return;
+		while(isalpha(peekC)>0 || peekC=='$' || peekC=='_' || isdigit(peekC)) {//while there are still acceptable cahrs
 			inputFile.get(c);
-			if(IsEnder())//if divider found
-				return "identifier";
+			obtainedSymbol += c;
+			peekC = inputFile.peek();
+			if(IsEnder(peekC))//if divider found
+				return;
 		}
+		return;
 	}
 	//digit
 	else if(isdigit(c)){
-		inputFile.get(c);
-		if(IsEnder())//if divider found
-			return "digit";
-		while(isdigit(c)){
+		obtainedSymbol += c;
+		peekC = inputFile.peek();
+		if(c==0 && (peekC=='x' || peekC=='X'))//if hex
+		{
 			inputFile.get(c);
-			if(IsEnder())//if divider found
-				return "digit";
+			obtainedSymbol += c;
+			peekC = inputFile.peek();
+			while(isdigit(peekC)) {//while there are still acceptable cahrs
+				inputFile.get(c);
+				obtainedSymbol += c;
+				peekC = inputFile.peek();
+				if(IsEnder(peekC))//if divider found
+					return;
+			}
+			return;
 		}
+		if(IsEnder(peekC))//if divider found
+			return;
+		while(isdigit(peekC)) {//while there are still acceptable cahrs
+			inputFile.get(c);
+			obtainedSymbol += c;
+			peekC = inputFile.peek();
+			if(IsEnder(peekC))//if divider found
+				return;
+		}
+		return;
 	}
-	//input symbol
-	else if(c=='!' || c=='@' || c=='#' || c=='%' || c=='^' || c=='&' || c== '*' || c=='(' || c==')' || c=='-' || c=='+' || c=='/'){
-		return "inputSymbol";
+	//inputsymbol
+	else if(c=='!'|| c=='@'|| c=='#'|| c=='%'|| c=='^'|| c=='&'|| c=='*'|| c=='('|| c==')'|| c=='-'|| c=='+'|| c=='/'){
+		obtainedSymbol += c;
+		peekC = inputFile.peek();
+		if(c==0 && (peekC=='x' || peekC=='X'))//if hex
+		{
+			inputFile.get(c);
+			obtainedSymbol += c;
+			peekC = inputFile.peek();
+			while(isdigit(peekC)) {//while there are still acceptable cahrs
+				inputFile.get(c);
+				obtainedSymbol += c;
+				peekC = inputFile.peek();
+				if(IsEnder(peekC))//if divider found
+					return;
+			}
+			return;
 		}
-	//string character
-	else if(c=='!' || c=='@' || c=='#' || c=='%' || c=='^' || c=='&' || c== '*' || c=='(' || c==')' || c=='-' || c=='+' || c=='/'){
-		return "inputSymbol";
+		if(IsEnder(peekC))//if divider found
+			return;
+		while(isdigit(peekC)) {//while there are still acceptable cahrs
+			inputFile.get(c);
+			obtainedSymbol += c;
+			peekC = inputFile.peek();
+			if(IsEnder(peekC))//if divider found
+				return;
 		}
-
-	else{
-		inputFile.get(c);
- 		return "not identifier";
- 	}
+		return;
+	}
 }
 
 int main(){
@@ -76,12 +140,15 @@ int main(){
 	}
 	
 	//GetOneWord
-	inputFile.get(c);
-	printf("%s",GetSymbol());
+	GetSymbol();
+	printf("|%s|\n",obtainedSymbol.c_str());
+	//printf("%s: ",GetSymbol());
+	//printf("%s\n",obtainedSymbol.c_str());
 	while(!inputFile.eof())
 	{
-		inputFile.get(c);
-		printf("\n%s",GetSymbol());
+		//printf("\n%s: ",GetSymbol());
+		GetSymbol();
+		printf("|%s|\n",obtainedSymbol.c_str());
 	}
 	//CharacterByCharacter
 	//inputFile.get(symbol);

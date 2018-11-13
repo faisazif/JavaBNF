@@ -1,11 +1,1 @@
-
-!
-
-abcdef12 asd
-asd
-123
-asdf34
-_a=das
-$asda
-76
-a	a
+a=32*32
