@@ -4,12 +4,66 @@
 #include <ctype.h>
 using namespace std;
 char symbol; 
+char obtainedSymbol[100]; 
 int errorLine; 
 int errorCol; 
 int defaultCol; 
 ifstream inputFile;
+char c;
 //Prototypes
 void VariableSymbol();void Letter();void Digit();
+
+void SkipBlanks(){
+	while(c==' ' || c=='\n' || c=='\t'){
+		inputFile.get(c);
+	}
+}
+
+bool IsEnder(){
+	if(inputFile.eof() || c==' ' || c=='\n' || c== '\t' || c==';' || c=='<' || c=='>' || c=='=')
+		return true;
+	else
+		return false;
+}
+
+char const * GetSymbol(){
+	SkipBlanks();
+	//identifier
+	if(isalpha(c) || c=='$' || c=='_'){
+		inputFile.get(c);
+		if(IsEnder())//if divider found
+			return "identifier";
+		while(isalpha(c)>0 || c=='$' || c=='_' || isdigit(c)){//while there are still acceptable cahrs
+			inputFile.get(c);
+			if(IsEnder())//if divider found
+				return "identifier";
+		}
+	}
+	//digit
+	else if(isdigit(c)){
+		inputFile.get(c);
+		if(IsEnder())//if divider found
+			return "digit";
+		while(isdigit(c)){
+			inputFile.get(c);
+			if(IsEnder())//if divider found
+				return "digit";
+		}
+	}
+	//input symbol
+	else if(c=='!' || c=='@' || c=='#' || c=='%' || c=='^' || c=='&' || c== '*' || c=='(' || c==')' || c=='-' || c=='+' || c=='/'){
+		return "inputSymbol";
+		}
+	//string character
+	else if(c=='!' || c=='@' || c=='#' || c=='%' || c=='^' || c=='&' || c== '*' || c=='(' || c==')' || c=='-' || c=='+' || c=='/'){
+		return "inputSymbol";
+		}
+
+	else{
+		inputFile.get(c);
+ 		return "not identifier";
+ 	}
+}
 
 int main(){
 	defaultCol = 1;
@@ -20,12 +74,20 @@ int main(){
 		printf("Error: File not found");
 		return 1;
 	}
-
-	inputFile.get(symbol);
-	VariableSymbol();
-	//A();
+	
+	//GetOneWord
+	inputFile.get(c);
+	printf("%s",GetSymbol());
+	while(!inputFile.eof())
+	{
+		inputFile.get(c);
+		printf("\n%s",GetSymbol());
+	}
+	//CharacterByCharacter
+	//inputFile.get(symbol);
 
 	//Check if there are more symbols 
+	/*
 	{
 		if(inputFile.eof())
 			printf("\n----------------------ZUCC----------------------\n");
@@ -34,6 +96,7 @@ int main(){
 			printf("Reason:\nThere are still symbol: %c\n", symbol);
 		}
 	}
+	*/
 	return 0;
 }
 
