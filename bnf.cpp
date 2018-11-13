@@ -41,7 +41,7 @@ bool IsEnder(char c){
 		return true;
 	
 	else if( c==' ' || c=='\t' || c=='!'|| c=='@'|| c=='#'|| c=='%'|| c=='^'|| c=='&'|| c=='*'|| c=='('|| c==')'|| c=='-'|| c=='+'|| c=='/'
-	|| c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' || c==';'){
+	|| c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' || c=='.' || c==';' ){
 		return true;
 	}
 	
@@ -53,7 +53,7 @@ bool IsEnder(char c){
 }
 
 void GetSymbol(){
-	printf("Accepted Symbol: %s\n",obtainedSymbol.c_str());//to debug accepted symbols
+	//printf("Accepted Symbol: %s\n",obtainedSymbol.c_str());//check what is accepted before
 	inputFile.get(c);
 	errorCol++;
 	obtainedSymbol = "";
@@ -129,15 +129,17 @@ int main(){
 	
 	//GetOneWord
 	GetSymbol();
-	TestProcedure();
-	/*
-	while(!inputFile.eof())
+	//TestProcedure();
+	
+	//Check GetSymbol Parsings
 	{
+		while(!inputFile.eof())
+		{
+			printf("|%s|\n",obtainedSymbol.c_str());
+			GetSymbol();
+		}
 		printf("|%s|\n",obtainedSymbol.c_str());
-		GetSymbol();
 	}
-	printf("|%s|\n",obtainedSymbol.c_str());
-	*/
 	//CharacterByCharacter
 	//inputFile.get(symbol);
 
