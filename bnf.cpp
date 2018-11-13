@@ -11,7 +11,7 @@ int defaultCol;
 ifstream inputFile;
 char c, peekC;
 //Prototypes
-void VariableSymbol();void Letter();void Digit();
+void VariableSymbol();void Letter();void Digit(); void Accept(std::string); void TestProcedure();
 
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
@@ -23,27 +23,29 @@ void SkipBlanks(){
 		else
 			errorCol++;
 		inputFile.get(c);
+		if(inputFile.eof())
+			return;
 	}
 }
 
 void ErrrorHandling(){
+	if(inputFile.eof())
+		printf("Rejected at line %d column %d.\nNo more symbols\n",errorLine, errorCol, obtainedSymbol.c_str());
+	else
 		printf("Rejected at line %d column %d.\nSymbol: %s\n",errorLine, errorCol, obtainedSymbol.c_str());
-		exit(0);
+	exit(0);
 }
 
 bool IsEnder(char c){
 	if(inputFile.eof()) 
 		return true;
-	/*
+	
 	else if( c==' ' || c=='\t' || c=='!'|| c=='@'|| c=='#'|| c=='%'|| c=='^'|| c=='&'|| c=='*'|| c=='('|| c==')'|| c=='-'|| c=='+'|| c=='/'
-	|| c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' ){
-		errorCol++;
+	|| c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' || c==';'){
 		return true;
 	}
-	*/
+	
 	else if(c=='\n'){
-		errorCol=defaultCol;
-		errorLine++;
 		return true;
 	}
 	else
@@ -51,81 +53,67 @@ bool IsEnder(char c){
 }
 
 void GetSymbol(){
+	printf("Accepted Symbol: %s\n",obtainedSymbol.c_str());//to debug accepted symbols
 	inputFile.get(c);
+	errorCol++;
 	obtainedSymbol = "";
 	SkipBlanks();
-	//identifier
-	if(isalpha(c) || c=='$' || c=='_'){
-		obtainedSymbol += c;
-		peekC = inputFile.peek();
-		if(IsEnder(peekC))//if divider found
-			return;
-		while(isalpha(peekC)>0 || peekC=='$' || peekC=='_' || isdigit(peekC)) {//while there are still acceptable cahrs
-			inputFile.get(c);
-			obtainedSymbol += c;
-			peekC = inputFile.peek();
-			if(IsEnder(peekC))//if divider found
-				return;
-		}
+	if(inputFile.eof())
 		return;
-	}
-	//digit
-	else if(isdigit(c)){
-		obtainedSymbol += c;
+	//save first symbol that is not a blank
+	obtainedSymbol += c;
+	if(IsEnder(c))//if special character found
+	{
+		//ifs for super special character
 		peekC = inputFile.peek();
-		if(c==0 && (peekC=='x' || peekC=='X'))//if hex
-		{
-			inputFile.get(c);
-			obtainedSymbol += c;
-			peekC = inputFile.peek();
-			while(isdigit(peekC)) {//while there are still acceptable cahrs
+		if(c=='=' || c=='+' || c=='-' || c=='<' || c=='>'){//for ==, ++, --, <<, >>
+			if(peekC==c){
 				inputFile.get(c);
+				errorCol++;
 				obtainedSymbol += c;
 				peekC = inputFile.peek();
-				if(IsEnder(peekC))//if divider found
-					return;
-			}
-			return;
-		}
-		if(IsEnder(peekC))//if divider found
-			return;
-		while(isdigit(peekC)) {//while there are still acceptable cahrs
-			inputFile.get(c);
-			obtainedSymbol += c;
-			peekC = inputFile.peek();
-			if(IsEnder(peekC))//if divider found
+				if(c=='>' && peekC=='>')//for >>
+				{
+					inputFile.get(c);
+					errorCol++;
+					obtainedSymbol += c;
+					peekC = inputFile.peek();
+				}
+				if((c=='<' ||c=='>') && peekC == '=')//for <<=, >>>=
+				{
+					inputFile.get(c);
+					errorCol++;
+					obtainedSymbol += c;
+					peekC = inputFile.peek();
+				}
 				return;
+			}
+			else if(peekC=='=' && (c=='+' || c=='-')){
+				inputFile.get(c);
+				errorCol++;
+				obtainedSymbol += c;
+				return;
+			}
 		}
-		return;
-	}
-	//inputsymbol
-	else if(c=='!'|| c=='@'|| c=='#'|| c=='%'|| c=='^'|| c=='&'|| c=='*'|| c=='('|| c==')'|| c=='-'|| c=='+'|| c=='/'){
-		obtainedSymbol += c;
-		peekC = inputFile.peek();
-		if(c==0 && (peekC=='x' || peekC=='X'))//if hex
-		{
-			inputFile.get(c);
-			obtainedSymbol += c;
-			peekC = inputFile.peek();
-			while(isdigit(peekC)) {//while there are still acceptable cahrs
+		else if(c=='*' || c=='/' || c=='&' || c=='^' || c=='|' || c=='%'){
+			if(peekC=='='){
 				inputFile.get(c);
 				obtainedSymbol += c;
-				peekC = inputFile.peek();
-				if(IsEnder(peekC))//if divider found
-					return;
+				return;
 			}
-			return;
 		}
+	}
+	else//for every other "regular" symbols
+	{
+		peekC = inputFile.peek();
 		if(IsEnder(peekC))//if divider found
 			return;
-		while(isdigit(peekC)) {//while there are still acceptable cahrs
+		while(IsEnder(peekC)==false) {//while there are still no divider cahrs
 			inputFile.get(c);
+			errorCol++;
 			obtainedSymbol += c;
 			peekC = inputFile.peek();
-			if(IsEnder(peekC))//if divider found
-				return;
 		}
-		return;
 	}
 }
 
@@ -141,15 +129,15 @@ int main(){
 	
 	//GetOneWord
 	GetSymbol();
-	printf("|%s|\n",obtainedSymbol.c_str());
-	//printf("%s: ",GetSymbol());
-	//printf("%s\n",obtainedSymbol.c_str());
+	TestProcedure();
+	/*
 	while(!inputFile.eof())
 	{
-		//printf("\n%s: ",GetSymbol());
-		GetSymbol();
 		printf("|%s|\n",obtainedSymbol.c_str());
+		GetSymbol();
 	}
+	printf("|%s|\n",obtainedSymbol.c_str());
+	*/
 	//CharacterByCharacter
 	//inputFile.get(symbol);
 
@@ -167,54 +155,57 @@ int main(){
 	return 0;
 }
 
-void Accept(char t){
-	if(inputFile.eof())
-	{
-		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
-		printf("Reason: \nNo more character to read");
-		exit(0);
+void Accept(std::string t){
+	if(t.compare(obtainedSymbol)==0){
+		GetSymbol();
 	}
-	else if(symbol == t)
+	else{
+		ErrrorHandling();
+	}
+}
+void Identifier(); void DecimalNumeral();
+void TestProcedure()
+{
+	Identifier();
+	Accept("=");
+	DecimalNumeral();
+	Accept("*");
+	DecimalNumeral();
+	Accept(";");
+}
+//Rules
+//148-152 joined to one because identifier rule is included in GetSymbol
+void Identifier(){
+	if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_')
 	{
-		errorCol++;
-		inputFile.get(symbol);
+		GetSymbol();
 	}
 	else
+		ErrrorHandling();
+}
+//
+void DecimalNumeral(){
+	for(int i = 0; i<obtainedSymbol.length(); i++)
 	{
-		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
-		printf("Reason:");
-		if(symbol == '\n')	
-			printf("Symbol found: enter\n");
-		else
-			printf("Symbol found: %c\n", symbol);
-		printf("Symbol should be: %c\n", t);
-		exit(0);
+		if(isdigit (obtainedSymbol.at(i))==false)
+		{
+			ErrrorHandling();
+		}
 	}
+	GetSymbol();
 }
 
-
-//Rules
-void NextLetter(){
-	if (isalpha(symbol)){
-		Letter(); NextLetter();
-	} 
-	else if(isdigit(symbol)){
-		Digit(); NextLetter();
-	}
-	else if(symbol == '$' || symbol == '_'){
-		VariableSymbol(); NextLetter();
-	}
-}
 void VariableSymbol() {
 	switch(symbol)
 	{
-		case '$' : Accept('$'); break;
-		default : Accept('_');
+		case '$' : Accept("$"); break;
+		default : Accept("_");
 	}
 }
 void Letter() {
 	if(isalpha(symbol))
-		Accept(symbol);
+	{
+	}
 	else
 	{
 		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
@@ -227,22 +218,6 @@ void Letter() {
 		exit(0);
 	}
 }
-void Digit() {
-	if(isdigit(symbol))
-		Accept(symbol);
-	else
-	{
-		printf("Rejected on line %d, column %d\n", errorLine, errorCol);
-		printf("Reason:");
-		if(symbol == '\n')	
-			printf("Symbol found: enter\n");
-		else
-			printf("Symbol found: %c\n", symbol);
-		printf("Symbol should be a digit\n");
-		exit(0);
-	}
-}
-
 
 //TestRules
 void EscapeCharacter(){
@@ -253,16 +228,6 @@ void EscapeCharacter(){
 		inputFile.get(symbol);
 		if(inputFile.eof())
 			break;
-	}
-}
-void A(){
-	while(symbol == 'f')
-	{
-		Accept('f');
-		Accept('a');
-		Accept('i');
-		Accept('s');
-		EscapeCharacter();
 	}
 }
 
