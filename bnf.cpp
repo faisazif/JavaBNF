@@ -175,7 +175,9 @@ int main(){
 	
 	return 0;
 }
-
+//Prototype
+void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();void DimExpr(); void Dims();
+void Expression();
 void Accept(std::string t){
 	if(t.compare(obtainedSymbol)==0){
 		errorCol+=evaluatedCol;
@@ -191,7 +193,6 @@ void Accept(std::string t){
 		ErrrorHandling();
 	}
 }
-void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();
 //Rules
 //148-152 joined to one because identifier rule is included in GetSymbol()
 void Identifier(){
@@ -387,11 +388,13 @@ void Name(){
 		Identifier();
 	}
 }
-//122
-void DimExpr(){
-	Accept("[");
-	Identifier();
-	Accept("]");
+//124
+void ArrayAccess(){
+	Name();
+	DimExpr();
+	while(!isEnd && obtainedSymbol=="["){
+		DimExpr();
+	}	
 }
 //123
 void Dims(){
@@ -400,21 +403,83 @@ void Dims(){
 		Accept("]");
 	}
 }
-//124
-void ArrayAccess(){
+//122 --------------------------------------------------------------------
+void DimExpr(){
+	Accept("[");
+	//Expression();
+	Accept("]");
+}
+//121 --------------------------------------------------------------------------
+void ArrayCreationExpression(){
 	Name();
-	DimExpr();
+	while(!isEnd && obtainedSymbol=="["){
+		Accept("[");
+		if(obtainedSymbol!="]")
+			//Expression();
+		Accept("]");
+	}
+}
+//120 -----------------------------------------------------------------
+void ArgumentList(){
+	
+}
+//119----------------------------------------------------------------
+void ArrayAndClassCreationExpression(){
+	if(true){
+		Name();
+		Accept("(");
+		ArgumentList();
+		Accept(")");
+	}
+	else
+		ArrayCreationExpression();
+}
+//118----------------------------------------------------------------------
+void MethodAccess(){
+	
+}
+//117------------------------------------------------------------------
+void MethodOrArrayAccess(){
+	
+}
+//116 -----------------------------------------------------------------------
+void Primary(){
+	
+}
+//115
+void PrePostSymbol(){
+	if(obtainedSymbol=="++" || obtainedSymbol=="--")
+		Accept(obtainedSymbol);
+}
+//114
+void Operand(){
+	Name();
 	while(!isEnd && obtainedSymbol=="["){
 		DimExpr();
 	}
+}
+//113
+void PostCrementExpression(){
+	Operand();
+	PrePostSymbol();
+}
+//112 -------------------------------------------------------------
+void UnaryExpression2(){
 	
 }
-//121
-void ArrayCreationExpression(){
+//111 --------------------------------------------------------- unaryExpression
+void PreCrementExpression(){
 	
+}
+//86
+void AssignmentOperator(){
+	if(obtainedSymbol=="="||obtainedSymbol=="*="||obtainedSymbol=="/="||obtainedSymbol=="%="||obtainedSymbol=="+="||obtainedSymbol=="-="||obtainedSymbol=="<<="||obtainedSymbol==">>="||obtainedSymbol==">>>="||obtainedSymbol=="&="||obtainedSymbol=="^="||obtainedSymbol=="|=")
+		Accept(obtainedSymbol);
+	else
+		ErrrorHandling();
 }
 void TestProcedure()
 {
-	Dims();
+	Operand();
 }
 
