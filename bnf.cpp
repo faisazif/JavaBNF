@@ -7,20 +7,22 @@ char symbol;
 std::string obtainedSymbol; 
 int errorLine; 
 int errorCol; 
+int evaluatedCol, evaluatedLine;
 int defaultCol; 
 ifstream inputFile;
 char c, peekC;
+bool isEnd;
 //Prototypes
 void VariableSymbol();void Letter();void Digit(); void Accept(std::string); void TestProcedure(); void InputCharacter();
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
 		if(c=='\n')
 		{
-			errorCol=defaultCol;
-			errorLine++;
+			evaluatedCol=defaultCol;
+			evaluatedLine++;
 		}
 		else
-			errorCol++;
+			evaluatedCol++;
 		inputFile.get(c);
 		if(inputFile.eof())
 			return;
@@ -51,11 +53,13 @@ bool IsEnder(char c){
 void GetSymbol(){
 	printf("Accepted Symbol: %s\n",obtainedSymbol.c_str());//check what is accepted before
 	inputFile.get(c);
-	errorCol++;
+	evaluatedCol++;
 	obtainedSymbol = "";
 	SkipBlanks();
-	if(inputFile.eof())
+	if(inputFile.eof()){
+		isEnd = true;
 		return;
+	}
 	//save first symbol that is not a blank
 	obtainedSymbol += c;
 	if(IsEnder(c))//if special character found
@@ -65,7 +69,7 @@ void GetSymbol(){
 		if(c=='=' || c=='+' || c=='-' || c=='<' || c=='>'){//for ==, ++, --, <<, >>
 			if(peekC==c){
 				inputFile.get(c);
-				errorCol++;
+				evaluatedCol++;
 				obtainedSymbol += c;
 				peekC = inputFile.peek();
 				if(c=='>' && peekC=='>')//for >>
@@ -78,7 +82,7 @@ void GetSymbol(){
 				if((c=='<' ||c=='>') && peekC == '=')//for <<=, >>>=
 				{
 					inputFile.get(c);
-					errorCol++;
+					evaluatedCol++;
 					obtainedSymbol += c;
 					peekC = inputFile.peek();
 				}
@@ -86,7 +90,7 @@ void GetSymbol(){
 			}
 			else if(peekC=='=' && (c=='+' || c=='-')){
 				inputFile.get(c);
-				errorCol++;
+				evaluatedCol++;
 				obtainedSymbol += c;
 				return;
 			}
@@ -104,16 +108,33 @@ void GetSymbol(){
 		peekC = inputFile.peek();
 		if(IsEnder(peekC))//if divider found
 			return;
-		while(IsEnder(peekC)==false) {//while there are still no divider cahrs
-			inputFile.get(c);
-			errorCol++;
-			obtainedSymbol += c;
-			peekC = inputFile.peek();
+		if(isalpha(c) || c=='$' || c=='_'){
+			while(IsEnder(peekC)==false && (isalpha(peekC) || peekC=='$' || peekC=='_')) {//while there are still no divider cahrs
+				inputFile.get(c);
+				evaluatedCol++;
+				obtainedSymbol += c;
+				peekC = inputFile.peek();
+			}
+		}
+		else if(isdigit(c)){
+			if(c=='0' && (peekC=='x' || peekC=='X')){//if hex
+				inputFile.get(c);
+				evaluatedCol++;
+				obtainedSymbol += c;
+				return;
+			}
+			while(IsEnder(peekC)==false && (isdigit(peekC))) {//while there are still no divider cahrs
+				inputFile.get(c);
+				evaluatedCol++;
+				obtainedSymbol += c;
+				peekC = inputFile.peek();
+			}
 		}
 	}
 }
 
 int main(){
+	isEnd = false;
 	defaultCol = 1;
 	errorLine = defaultCol;
 	errorCol = defaultCol;
@@ -125,7 +146,8 @@ int main(){
 	
 	//GetOneWord
 	GetSymbol();
-	TestProcedure();
+	if(!isEnd)
+		TestProcedure();
 	/*
 	//Check GetSymbol Parsings
 	{
@@ -136,42 +158,53 @@ int main(){
 		}
 		printf("|%s|\n",obtainedSymbol.c_str());
 	}
-	*/
+	//*/
 	//CharacterByCharacter
 	//inputFile.get(symbol);
 
-	//Check if there are more symbols 
-	/*
+	//Check if there are more symbols */
+	
 	{
-		if(inputFile.eof())
+		if(isEnd)
 			printf("\n----------------------ZUCC----------------------\n");
 		else {
 			printf("Rejected on line %d, column %d\n", errorLine, errorCol);
-			printf("Reason:\nThere are still symbol: %c\n", symbol);
+			printf("Reason:\nThere are still symbol: %s\n", obtainedSymbol.c_str());
 		}
 	}
-	*/
+	
 	return 0;
 }
 
 void Accept(std::string t){
 	if(t.compare(obtainedSymbol)==0){
+		errorCol+=evaluatedCol;
+		errorLine+=evaluatedLine;
+		evaluatedCol = evaluatedLine = 0;
+		if(inputFile.eof())
+			isEnd = true;
 		GetSymbol();
 	}
 	else{
+		if(inputFile.eof())
+			isEnd = true;
 		ErrrorHandling();
 	}
 }
 void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();
-void TestProcedure()
-{
-	CharacterLiteral();
-}
 //Rules
 //148-152 joined to one because identifier rule is included in GetSymbol()
 void Identifier(){
-	if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_')
-		GetSymbol();
+	if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Accept(obtainedSymbol);
+			if(isEnd)
+				return;
+		while(isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_' || isdigit(obtainedSymbol.at(0))){
+			Accept(obtainedSymbol);
+			if(isEnd)
+					break;
+		}
+	}
 	else
 		ErrrorHandling();
 }
@@ -180,13 +213,13 @@ void InputCharacter(){
 	if(obtainedSymbol.length()>1 )
 		ErrrorHandling();
 	else if(isalpha(obtainedSymbol.at(0)))
-		GetSymbol();
+		Accept(obtainedSymbol);
 	else if (obtainedSymbol.at(0)=='!' || obtainedSymbol.at(0) == '@' || obtainedSymbol.at(0) == '#' || obtainedSymbol.at(0) == '%' || obtainedSymbol.at(0) == '^' || obtainedSymbol.at(0) == '&' || obtainedSymbol.at(0) == '*' || obtainedSymbol.at(0) == '(' || obtainedSymbol.at(0) == ')' || obtainedSymbol.at(0) == '-' || obtainedSymbol.at(0) == '+' || obtainedSymbol.at(0) == '/')
-		GetSymbol();
+		Accept(obtainedSymbol);
 	else if (obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_')
-		GetSymbol();
+		Accept(obtainedSymbol);
 	else if(isdigit(obtainedSymbol.at(0)))
-		GetSymbol();
+		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
 }
@@ -196,7 +229,7 @@ void StringCharacters(){
 			return;
 	while(obtainedSymbol.at(0) != '"')
 	{
-		GetSymbol();
+		Accept(obtainedSymbol);
 		if(inputFile.eof())
 			break;
 	}
@@ -216,15 +249,17 @@ void StringLiteral(){
 //141-142 Combined
 void CharacterLiteral(){
 	Accept("'");
-	if(obtainedSymbol.compare("'")==0)
+	if(obtainedSymbol.compare("'")==0)//the input is ''
 		return;
 	else
 	{
 		if (obtainedSymbol.length()>1) //if there are more than 1 char
 		{
-			if(obtainedSymbol.at(0)==92)//if 1st symbol is backslash
+			if(obtainedSymbol.at(0)==92 && obtainedSymbol.length()<3)//if 1st symbol is backslash
 			{
-				if(obtainedSymbol.at(1)!='n' ||obtainedSymbol.at(1)!='t')
+				if((obtainedSymbol.at(1)=='n' ||obtainedSymbol.at(1)=='t'||obtainedSymbol.at(1)=='b'||obtainedSymbol.at(1)=='r'))
+					GetSymbol();
+				else
 					ErrrorHandling();
 			}
 			else
@@ -235,15 +270,151 @@ void CharacterLiteral(){
 	}
 	Accept("'");
 }
-//130. Rule 131 Digit also modeled here
-void DecimalNumeral(){
-	for(int i = 0; i<obtainedSymbol.length(); i++)
-	{
-		if(isdigit (obtainedSymbol.at(i))==false)
-		{
-			ErrrorHandling();
+//140
+void BooleanLiteral(){
+	if(obtainedSymbol == "true" || obtainedSymbol == "false")
+		Accept(obtainedSymbol);
+	else
+		ErrrorHandling();
+}
+//139
+void FloatTypeSuffix(){
+	if(obtainedSymbol=="f" ||obtainedSymbol=="F" || obtainedSymbol=="d" || obtainedSymbol=="D")
+		Accept(obtainedSymbol);
+}
+//137-138
+void SignedInteger(){
+	if(obtainedSymbol=="+" || obtainedSymbol=="-")
+		Accept(obtainedSymbol);
+	DecimalNumeral();
+}
+//135-136
+void ExponentPart(){
+	if(obtainedSymbol=="e" || obtainedSymbol=="E"){
+		Accept(obtainedSymbol);
+		SignedInteger();
+	}
+}
+//134
+void FloatingPoint(){
+	if(isdigit(obtainedSymbol.at(0)))
+		DecimalNumeral();
+	ExponentPart();
+	FloatTypeSuffix();
+}
+//133
+void HexDigit(){
+	if(isxdigit(obtainedSymbol.at(0))){//if the first char of the first symbol is hex
+		while(!isEnd && isxdigit(obtainedSymbol.at(0))){//while next symbols is still hex
+			for(int i=0; i<obtainedSymbol.length(); i++){
+				if(!isxdigit(obtainedSymbol.at(i)))
+					ErrrorHandling();
+			}
+			Accept(obtainedSymbol);
 		}
 	}
-	GetSymbol();
+	else
+		ErrrorHandling();
+}
+//132
+void HexNumeral(){
+	if(obtainedSymbol == "0x" || obtainedSymbol=="0X"){
+		Accept(obtainedSymbol);
+		HexDigit();
+	}
+	else
+		ErrrorHandling();
+}
+//130-131
+void DecimalNumeral(){
+	if(isdigit (obtainedSymbol.at(0)))//because parsing is always digits or not, check the first char is adequate
+		Accept(obtainedSymbol);
+	else
+		ErrrorHandling();
+}
+//129
+void IntegerTypeSuffix(){
+	if(obtainedSymbol=="l" || obtainedSymbol=="L")
+		Accept(obtainedSymbol);
+}
+//128
+void IntegerOrFloat(){
+	if(obtainedSymbol=="."){
+		Accept(".");
+		FloatingPoint();
+	}
+	else if(isdigit(obtainedSymbol.at(0))){
+		DecimalNumeral();
+		IntegerTypeSuffix();
+	}
+}
+//127
+void NumberLiteral(){
+	if(obtainedSymbol=="0x" || obtainedSymbol=="0X"){//if hex detected
+		printf("Testis: %s\n", obtainedSymbol.c_str());
+		HexNumeral();
+	}
+	else if(obtainedSymbol=="."){ //if floating point without pre digit
+			FloatingPoint();
+		
+	}
+	else if(isdigit(obtainedSymbol.at(0))){ //if digits
+		Accept(obtainedSymbol);
+			if(obtainedSymbol==".") //if floating point with pre digit
+				FloatingPoint();
+			else //if its only decimal numeral
+				IntegerTypeSuffix();
+	}
+}
+//126
+void PrimitiveLiteral(){
+	if(obtainedSymbol=="true" || obtainedSymbol=="false")
+		BooleanLiteral();
+	else if(obtainedSymbol=="null")
+		Accept("null");
+	else if(obtainedSymbol=="." || isdigit(obtainedSymbol.at(0)))
+		NumberLiteral();
+	else
+		CharacterLiteral();
+}
+//125
+void Name(){
+	Identifier();
+	while(!isEnd && obtainedSymbol=="."){
+		Accept(".");
+		if(isEnd)
+			ErrrorHandling();
+		Identifier();
+	}
+}
+//122
+void DimExpr(){
+	Accept("[");
+	Identifier();
+	Accept("]");
+}
+//123
+void Dims(){
+	while(!isEnd && obtainedSymbol=="["){
+		Accept("[");
+		Accept("]");
+	}
+}
+//124
+void ArrayAccess(){
+	Name();
+	DimExpr();
+	while(!isEnd && obtainedSymbol=="["){
+		DimExpr();
+	}
+	
+}
+//121
+void ArrayCreationExpression(){
+	
+}
+void TestProcedure()
+{
+	Dims();
 }
 
