@@ -13,7 +13,10 @@ ifstream inputFile;
 char c, peekC;
 bool isEnd, haveSpace, isReserved;
 //Prototypes
-void VariableSymbol();void Letter();void Digit(); void Accept(std::string); void TestProcedure(); void InputCharacter();
+void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();void DimExpr(); void Dims();
+void Expression();void DataType(); void Type(); void UnaryExpression(); void MultiplicativeExpression(); void AdditiveExpression();
+void ShiftExpression(); void RelationalExpression(); void EqualityExpression(); void AndExpression(); void OrExpression();
+void Accept(std::string); void TestProcedure();
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
 		haveSpace = true;
@@ -78,7 +81,7 @@ void GetSymbol(){
 	{
 		//ifs for super special character
 		peekC = inputFile.peek();
-		if(c=='=' || c=='+' || c=='-' || c=='<' || c=='>'){//for ==, ++, --, <<, >>
+		if(c=='=' || c=='+' || c=='-' || c=='<' || c=='>' || c=='|' || c=='&'){//for ==, ++, --, <<, >>
 			if(peekC==c){
 				inputFile.get(c);
 				evaluatedCol++;
@@ -87,7 +90,7 @@ void GetSymbol(){
 				if(c=='>' && peekC=='>')//for >>
 				{
 					inputFile.get(c);
-					errorCol++;
+					evaluatedCol++;
 					obtainedSymbol += c;
 					peekC = inputFile.peek();
 				}
@@ -110,6 +113,7 @@ void GetSymbol(){
 		else if(c=='*' || c=='/' || c=='&' || c=='^' || c=='|' || c=='%'){//for *=, /=, &=, etc,
 			if(peekC=='='){
 				inputFile.get(c);
+				evaluatedCol++;
 				obtainedSymbol += c;
 				return;
 			}
@@ -117,6 +121,7 @@ void GetSymbol(){
 		else if(c=='.'){//for .*
 			if(peekC=='*'){
 				inputFile.get(c);
+				evaluatedCol++;
 				obtainedSymbol += c;
 				return;
 			}
@@ -196,9 +201,6 @@ int main(){
 	
 	return 0;
 }
-//Prototype
-void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();void DimExpr(); void Dims();
-void Expression();void DataType(); void Type();
 void Accept(std::string t){
 	if(t.compare(obtainedSymbol)==0){
 		errorCol+=evaluatedCol;
@@ -251,25 +253,24 @@ void InputCharacter(){
 }
 //144-145 Combined
 void StringCharacters(){
-		if(inputFile.eof())
-			return;
+	if(isEnd)
+		return;
 	while(obtainedSymbol.at(0) != '"')
 	{
 		Accept(obtainedSymbol);
-		if(inputFile.eof())
-			break;
+		if(isEnd)
+			return;
 	}
 }
 //143
 void StringLiteral(){
+	if(isEnd)
+		ErrrorHandling();
 	std::string petik = "";
 	char x = '"';
 	petik += x;
 	Accept(petik);
-	if(obtainedSymbol.compare(petik)==0)
-		return;
-	else
-		StringCharacters();
+	StringCharacters();
 	Accept(petik);
 }
 //141-142 Combined
@@ -298,6 +299,8 @@ void CharacterLiteral(){
 }
 //140
 void BooleanLiteral(){
+	if(isEnd)
+		ErrrorHandling();
 	if(obtainedSymbol == "true" || obtainedSymbol == "false")
 		Accept(obtainedSymbol);
 	else
@@ -305,6 +308,8 @@ void BooleanLiteral(){
 }
 //139
 void FloatTypeSuffix(){
+	if(isEnd)
+		return;
 	if(obtainedSymbol=="f" ||obtainedSymbol=="F" || obtainedSymbol=="d" || obtainedSymbol=="D")
 		Accept(obtainedSymbol);
 }
@@ -429,83 +434,187 @@ void Dims(){
 		Accept("]");
 	}
 }
-//122 --------------------------------------------------------------------
+//122
 void DimExpr(){
 	Accept("[");
-	//Expression();
+	Expression();
 	Accept("]");
 }
-//121 --------------------------------------------------------------------------
+//121 
 void ArrayCreationExpression(){
-	Name();
-	while(!isEnd && obtainedSymbol=="["){
-		Accept("[");
-		if(obtainedSymbol!="]")
-			//Expression();
-		Accept("]");
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="("){
+		Accept("(");
+		ArgumentList();
+		Accept(")");
 	}
+	else if(obtainedSymbol=="["){
+		DimExpr();
+		while(!isEnd && obtainedSymbol=="["){
+			DimExpr();
+		}
+		Dims();
+	}
+	else
+		ErrrorHandling();
 }
-//120 -----------------------------------------------------------------
+//120
 void ArgumentList(){
-	
+	Expression();
 }
-//119----------------------------------------------------------------
+//119
 void ArrayAndClassCreationExpression(){
-	if(true){
-		Name();
+	Name();
+	ArrayCreationExpression();
+}
+//118
+void MethodAccess(){
+	if(!isEnd){
+		while(!isEnd && obtainedSymbol=="."){
+			Accept(".");
+			Identifier();
+		}
 		Accept("(");
 		ArgumentList();
 		Accept(")");
 	}
 	else
-		ArrayCreationExpression();
+		return;
 }
-//118----------------------------------------------------------------------
-void MethodAccess(){
-	
-}
-//117------------------------------------------------------------------
+//117
 void MethodOrArrayAccess(){
-	
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="["){
+		DimExpr();
+		while(!isEnd && obtainedSymbol=="["){
+			DimExpr();
+		}
+		MethodAccess();
+	}
+	else if(obtainedSymbol=="("){
+		Accept("(");
+		ArgumentList();
+		Accept(")");
+	}
 }
-//116 -----------------------------------------------------------------------
+//116 
 void Primary(){
-	
+	if(isEnd)
+		ErrrorHandling();
+	std::string petik = "";
+	char x = '"';
+	petik += x;
+	if(obtainedSymbol=="this"){
+		Accept(obtainedSymbol);
+		MethodAccess();
+	}
+	else if(obtainedSymbol=="("){
+		Accept("(");
+		Expression();
+		Accept(")");
+	}
+	else if(obtainedSymbol=="new"){
+		Accept(obtainedSymbol);
+		ArrayAndClassCreationExpression();
+		MethodAccess();
+	}
+	else if(obtainedSymbol=="super"){
+		Accept(obtainedSymbol);
+		MethodAccess();
+	}
+	else if(obtainedSymbol==petik){
+		StringLiteral();
+	}
+	else if(obtainedSymbol=="true" || obtainedSymbol=="false" || obtainedSymbol=="null" || obtainedSymbol=="." || isdigit(obtainedSymbol.at(0))){
+		PrimitiveLiteral();
+	}
+	else if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Name();
+		MethodOrArrayAccess();
+	}
+	else
+		ErrrorHandling();
 }
 //115
 void PrePostSymbol(){
 	if(obtainedSymbol=="++" || obtainedSymbol=="--")
 		Accept(obtainedSymbol);
 }
-//114 --------------------------------------------------------DimExpr
+//114
 void Operand(){
 	Name();
 	while(!isEnd && obtainedSymbol=="["){
 		DimExpr();
 	}
 }
-//113 --------------------------------------------------------Operand
+//113
 void PostCrementExpression(){
 	Operand();
 	PrePostSymbol();
 }
-//112 -------------------------------------------------------------
+//112 
 void UnaryExpression2(){
 	
 }
-//111 --------------------------------------------------------- unaryExpression
+//111 
 void PreCrementExpression(){
 	if(obtainedSymbol=="--" || obtainedSymbol=="++"){
 		Accept(obtainedSymbol);
+		UnaryExpression();
 	}
 }
-//110 --------------------------------------------------------- operand, unary expression
+//110 
 void UnaryExpression(){
+	
 }
-//109 ---------------------------------------------------------datatype, unary expression
+//109 
 void CastExpression(){
 }
-//102
+//109
+void Multi(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="*" || obtainedSymbol=="/" || obtainedSymbol=="%"){
+		Accept(obtainedSymbol);
+		MultiplicativeExpression();
+	}
+}
+//108
+void MultiplicativeExpression(){
+	UnaryExpression();
+	Multi();
+}
+//107
+void Add(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="+" || obtainedSymbol=="-"){
+		Accept(obtainedSymbol);
+		AdditiveExpression();
+	}
+}
+//106
+void AdditiveExpression(){
+	MultiplicativeExpression();
+	Add();
+}
+//105
+void Shift(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="<<" || obtainedSymbol==">>" || obtainedSymbol==">>>"){
+		Accept(obtainedSymbol);
+		ShiftExpression();
+	}
+}
+//104
+void ShiftExpression(){
+	AdditiveExpression();
+	Shift();
+}
+//103
 void InstanceOf(){
 	if(isEnd)
 		return;
@@ -514,14 +623,69 @@ void InstanceOf(){
 		Type();
 	}
 }
-//86
+//102
+void InstanceOfExpression(){
+	RelationalExpression();
+	InstanceOf();
+}
+//101
+void Relational(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="<" || obtainedSymbol==">" || obtainedSymbol=="<=" || obtainedSymbol==">="){
+		Accept(obtainedSymbol);
+		RelationalExpression();
+	}
+}
+//100
+void RelationalExpression(){
+	ShiftExpression();
+	Relational();
+}
+//99
+void Equal(){
+	if(obtainedSymbol=="==" || obtainedSymbol=="!="){
+		Accept(obtainedSymbol);
+		EqualityExpression();
+	}
+}
+//98
+void EqualityExpression(){
+	InstanceOfExpression();
+	Equal();
+}
+//97
+void And(){
+	if(obtainedSymbol=="&"){
+		Accept(obtainedSymbol);
+		AndExpression();
+	}
+}
+//96
+void AndExpression(){
+	EqualityExpression();
+	And();
+}
+//97
+void Or(){
+	if(obtainedSymbol=="^"){
+		Accept(obtainedSymbol);
+		OrExpression();
+	}
+}
+//96
+void OrExpression(){
+	AndExpression();
+	Or();
+}
+//87
 void AssignmentOperator(){
 	if(obtainedSymbol=="="||obtainedSymbol=="*="||obtainedSymbol=="/="||obtainedSymbol=="%="||obtainedSymbol=="+="||obtainedSymbol=="-="||obtainedSymbol=="<<="||obtainedSymbol==">>="||obtainedSymbol==">>>="||obtainedSymbol=="&="||obtainedSymbol=="^="||obtainedSymbol=="|=")
 		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
 }
-//75
+//76
 void Cont(){
 	if(isEnd)
 		return;
@@ -529,19 +693,19 @@ void Cont(){
 		Identifier();
 	}
 }
-//74
+//75
 void ContinueStatement(){
 	Accept("continue");
 	Cont();
 	Accept(";");
 }
-//73
+//74
 void BreakStatement(){
 	Accept("break");
 	Cont();
 	Accept(";");
 }
-//65
+//66
 void SwitchLabels(){
 	if(isEnd)
 		return;
@@ -550,18 +714,18 @@ void SwitchLabels(){
 		Accept(":");
 	}
 }
-//54 ---------------------------------------------------------------
+//55 
 void BlockStatement(){
 	
 }
-//52
+//53
 void DataType(){
 	if(obtainedSymbol=="float" ||obtainedSymbol=="double"||obtainedSymbol=="int"||obtainedSymbol=="long"||obtainedSymbol=="short"||obtainedSymbol=="char"||obtainedSymbol=="boolean")
 		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
 }
-//51
+//52
 void Type(){
 	if(isEnd)
 		ErrrorHandling();
@@ -576,7 +740,7 @@ void Type(){
 	else
 		ErrrorHandling();
 }
-//20
+//21
 void Throws(){
 	if(obtainedSymbol=="throws"){
 		Accept(obtainedSymbol);
@@ -587,7 +751,7 @@ void Throws(){
 		}
 	}
 }
-//19
+//20
 void Parameter(){
 	if(isEnd)
 		return;
@@ -601,7 +765,7 @@ void Parameter(){
 		}
 	}
 }
-//18
+//19
 void ConstructorDeclarator(){
 	Identifier();
 	if(!isEnd && (obtainedSymbol=="(")){
@@ -610,7 +774,7 @@ void ConstructorDeclarator(){
 		Accept(")");
 	}
 }
-//12
+//13
 void ImplementDeclaration(){
 	Accept("implements");
 	Name();
@@ -619,12 +783,12 @@ void ImplementDeclaration(){
 		Name();
 	}
 }
-//11
+//12
 void SuperDeclaration(){
 	Accept("extends");
 	Name();
 }
-//9
+//10
 void FinalModifier(){
 	if(obtainedSymbol=="final")
 		Accept(obtainedSymbol);
@@ -652,5 +816,5 @@ void PackageDeclaration(){
 }
 void TestProcedure()
 {
-	InstanceOf();
+	BooleanLiteral();
 }
