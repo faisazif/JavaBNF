@@ -29,9 +29,9 @@ void SkipBlanks(){
 	}
 }
 void ErrrorHandling(){
-	//if(inputFile.eof())
-	//	printf("Rejected at line %d column %d.\nNo more symbol to read\n",errorLine, errorCol, obtainedSymbol.c_str());
-	//else
+	if(isEnd)
+		printf("Rejected at line %d column %d.\nNo more symbol to read\n",errorLine, errorCol, obtainedSymbol.c_str());
+	else
 		printf("Rejected at line %d column %d.\nSymbol: %s\n",errorLine, errorCol, obtainedSymbol.c_str());
 	exit(0);
 }
@@ -40,7 +40,7 @@ bool IsEnder(char c){
 		return true;
 	
 	else if( c==' ' || c=='\t' || c=='!'|| c=='@'|| c=='#'|| c=='%'|| c=='^'|| c=='&'|| c=='*'|| c=='('|| c==')'|| c=='-'|| c=='+'|| c=='/'
-	|| c==39 || c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' || c=='.' || c==';' ){
+	|| c==39 || c=='"'|| c=='+'|| c=='-' || c=='[' || c==']' || c=='<' || c=='>' || c=='=' || c=='|' || c=='.' || c==',' || c==';' ){
 		return true;
 	}
 	
@@ -95,8 +95,15 @@ void GetSymbol(){
 				return;
 			}
 		}
-		else if(c=='*' || c=='/' || c=='&' || c=='^' || c=='|' || c=='%'){
+		else if(c=='*' || c=='/' || c=='&' || c=='^' || c=='|' || c=='%'){//for *=, /=, &=, etc,
 			if(peekC=='='){
+				inputFile.get(c);
+				obtainedSymbol += c;
+				return;
+			}
+		}
+		else if(c=='.'){//for .*
+			if(peekC=='*'){
 				inputFile.get(c);
 				obtainedSymbol += c;
 				return;
@@ -177,7 +184,7 @@ int main(){
 }
 //Prototype
 void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();void DimExpr(); void Dims();
-void Expression();
+void Expression();void DataType(); void Type();
 void Accept(std::string t){
 	if(t.compare(obtainedSymbol)==0){
 		errorCol+=evaluatedCol;
@@ -196,6 +203,8 @@ void Accept(std::string t){
 //Rules
 //148-152 joined to one because identifier rule is included in GetSymbol()
 void Identifier(){
+	if(isEnd)
+		ErrrorHandling();
 	if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
 		Accept(obtainedSymbol);
 			if(isEnd)
@@ -352,17 +361,18 @@ void IntegerOrFloat(){
 //127
 void NumberLiteral(){
 	if(obtainedSymbol=="0x" || obtainedSymbol=="0X"){//if hex detected
-		printf("Testis: %s\n", obtainedSymbol.c_str());
 		HexNumeral();
 	}
 	else if(obtainedSymbol=="."){ //if floating point without pre digit
-			FloatingPoint();
-		
+		Accept(obtainedSymbol);
+		FloatingPoint();
 	}
 	else if(isdigit(obtainedSymbol.at(0))){ //if digits
 		Accept(obtainedSymbol);
-			if(obtainedSymbol==".") //if floating point with pre digit
+			if(obtainedSymbol=="."){ //if floating point with pre digit
+				Accept(obtainedSymbol);
 				FloatingPoint();
+			}
 			else //if its only decimal numeral
 				IntegerTypeSuffix();
 	}
@@ -451,14 +461,14 @@ void PrePostSymbol(){
 	if(obtainedSymbol=="++" || obtainedSymbol=="--")
 		Accept(obtainedSymbol);
 }
-//114
+//114 --------------------------------------------------------DimExpr
 void Operand(){
 	Name();
 	while(!isEnd && obtainedSymbol=="["){
 		DimExpr();
 	}
 }
-//113
+//113 --------------------------------------------------------Operand
 void PostCrementExpression(){
 	Operand();
 	PrePostSymbol();
@@ -469,7 +479,15 @@ void UnaryExpression2(){
 }
 //111 --------------------------------------------------------- unaryExpression
 void PreCrementExpression(){
-	
+	if(obtainedSymbol=="--" || obtainedSymbol=="++"){
+		Accept(obtainedSymbol);
+	}
+}
+//110 --------------------------------------------------------- operand, unary expression
+void UnaryExpression(){
+}
+//109 ---------------------------------------------------------datatype, unary expression
+void CastExpression(){
 }
 //86
 void AssignmentOperator(){
@@ -478,8 +496,84 @@ void AssignmentOperator(){
 	else
 		ErrrorHandling();
 }
+//54 ---------------------------------------------------------------
+void BlockStatement(){
+	
+}
+//52
+void DataType(){
+	if(obtainedSymbol=="float" ||obtainedSymbol=="double"||obtainedSymbol=="int"||obtainedSymbol=="long"||obtainedSymbol=="short"||obtainedSymbol=="char"||obtainedSymbol=="boolean")
+		Accept(obtainedSymbol);
+	else
+		ErrrorHandling();
+}
+//51
+void Type(){
+	if(obtainedSymbol=="float" ||obtainedSymbol=="double"||obtainedSymbol=="int"||obtainedSymbol=="long"||obtainedSymbol=="short"||obtainedSymbol=="char"||obtainedSymbol=="boolean"){
+		DataType();
+		Dims();
+	}
+	else if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Name();
+		Dims();
+	}
+	else
+		ErrrorHandling();
+}
+//20
+void Throws(){
+	if(obtainedSymbol=="throws"){
+		Accept(obtainedSymbol);
+		Name();
+		while(!isEnd && obtainedSymbol==","){
+			Accept(obtainedSymbol);
+			Name();
+		}
+	}
+}
+//19
+//12
+
+void ImplementDeclaration(){
+	Accept("implements");
+	Name();
+	while(!isEnd && obtainedSymbol==","){
+		Accept(",");
+		Name();
+	}
+}
+//11
+void SuperDeclaration(){
+	Accept("extends");
+	Name();
+}
+//9
+void FinalModifier(){
+	if(obtainedSymbol=="final")
+		Accept(obtainedSymbol);
+}
+//4
+void ImportAll(){
+	if(obtainedSymbol==".*"){
+		Accept(obtainedSymbol);
+	}
+}
+//3
+void ImportDeclaration(){
+	Accept("import");
+	Name();
+	ImportAll();
+	Accept(";");
+}
+//2
+void PackageDeclaration(){
+	if(obtainedSymbol=="package"){
+		Accept(obtainedSymbol);
+		Name();
+		Accept(";");
+	}
+}
 void TestProcedure()
 {
-	Operand();
+	ImplementDeclaration();
 }
-
