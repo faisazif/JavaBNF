@@ -11,11 +11,12 @@ int evaluatedCol, evaluatedLine;
 int defaultCol; 
 ifstream inputFile;
 char c, peekC;
-bool isEnd;
+bool isEnd, haveSpace, isReserved;
 //Prototypes
 void VariableSymbol();void Letter();void Digit(); void Accept(std::string); void TestProcedure(); void InputCharacter();
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
+		haveSpace = true;
 		if(c=='\n')
 		{
 			evaluatedCol=defaultCol;
@@ -31,9 +32,19 @@ void SkipBlanks(){
 void ErrrorHandling(){
 	if(isEnd)
 		printf("Rejected at line %d column %d.\nNo more symbol to read\n",errorLine, errorCol, obtainedSymbol.c_str());
+	else if(isReserved)
+		printf("Rejected at line %d column %d.\nSymbol: %s is reserved\n",errorLine, errorCol, obtainedSymbol.c_str());
 	else
 		printf("Rejected at line %d column %d.\nSymbol: %s\n",errorLine, errorCol, obtainedSymbol.c_str());
 	exit(0);
+}
+bool IsReserveWord(){
+	if(obtainedSymbol=="abstract"||obtainedSymbol=="assert"||obtainedSymbol=="boolean"||obtainedSymbol=="break"||obtainedSymbol=="byte"||obtainedSymbol=="case"||obtainedSymbol=="catch"||obtainedSymbol=="char"||obtainedSymbol=="class"||obtainedSymbol=="const"||obtainedSymbol=="default"||obtainedSymbol=="do"||obtainedSymbol=="double"||obtainedSymbol=="else"||obtainedSymbol=="enum"||obtainedSymbol=="extends"||obtainedSymbol=="false"||obtainedSymbol=="final"||obtainedSymbol=="finally"||obtainedSymbol=="float"||obtainedSymbol=="for"||obtainedSymbol=="goto"||obtainedSymbol=="if"||obtainedSymbol=="implements"||obtainedSymbol=="import"||obtainedSymbol=="instanceof"||obtainedSymbol=="int"||obtainedSymbol=="interface"||obtainedSymbol=="long"||obtainedSymbol=="native"||obtainedSymbol=="new"||obtainedSymbol=="null"||obtainedSymbol=="package"||obtainedSymbol=="private"||obtainedSymbol=="protected"||obtainedSymbol=="public"||obtainedSymbol=="return"||obtainedSymbol=="short"||obtainedSymbol=="static"||obtainedSymbol=="strictfp"||obtainedSymbol=="super"||obtainedSymbol=="switch"||obtainedSymbol=="synchronized"||obtainedSymbol=="this"||obtainedSymbol=="throw"||obtainedSymbol=="throws"||obtainedSymbol=="transient"||obtainedSymbol=="true"||obtainedSymbol=="try"||obtainedSymbol=="void"||obtainedSymbol=="volatile"||obtainedSymbol=="while"||obtainedSymbol=="continue"){
+		isReserved = true;
+		return true;
+	}
+	else
+		return false;
 }
 bool IsEnder(char c){
 	if(inputFile.eof()) 
@@ -55,6 +66,7 @@ void GetSymbol(){
 	inputFile.get(c);
 	evaluatedCol++;
 	obtainedSymbol = "";
+	haveSpace = false;
 	SkipBlanks();
 	if(inputFile.eof()){
 		isEnd = true;
@@ -142,6 +154,8 @@ void GetSymbol(){
 
 int main(){
 	isEnd = false;
+	haveSpace = false;
+	isReserved = false;
 	defaultCol = 1;
 	errorLine = defaultCol;
 	errorCol = defaultCol;
@@ -205,11 +219,13 @@ void Accept(std::string t){
 void Identifier(){
 	if(isEnd)
 		ErrrorHandling();
+	if(IsReserveWord())
+		ErrrorHandling();
 	if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
 		Accept(obtainedSymbol);
 			if(isEnd)
 				return;
-		while(isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_' || isdigit(obtainedSymbol.at(0))){
+		while(!haveSpace && (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_' || isdigit(obtainedSymbol.at(0)))){
 			Accept(obtainedSymbol);
 			if(isEnd)
 					break;
@@ -489,12 +505,50 @@ void UnaryExpression(){
 //109 ---------------------------------------------------------datatype, unary expression
 void CastExpression(){
 }
+//102
+void InstanceOf(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="instanceof"){
+		Accept(obtainedSymbol);
+		Type();
+	}
+}
 //86
 void AssignmentOperator(){
 	if(obtainedSymbol=="="||obtainedSymbol=="*="||obtainedSymbol=="/="||obtainedSymbol=="%="||obtainedSymbol=="+="||obtainedSymbol=="-="||obtainedSymbol=="<<="||obtainedSymbol==">>="||obtainedSymbol==">>>="||obtainedSymbol=="&="||obtainedSymbol=="^="||obtainedSymbol=="|=")
 		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
+}
+//75
+void Cont(){
+	if(isEnd)
+		return;
+	if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Identifier();
+	}
+}
+//74
+void ContinueStatement(){
+	Accept("continue");
+	Cont();
+	Accept(";");
+}
+//73
+void BreakStatement(){
+	Accept("break");
+	Cont();
+	Accept(";");
+}
+//65
+void SwitchLabels(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="default"){
+		Accept(obtainedSymbol);
+		Accept(":");
+	}
 }
 //54 ---------------------------------------------------------------
 void BlockStatement(){
@@ -509,11 +563,13 @@ void DataType(){
 }
 //51
 void Type(){
+	if(isEnd)
+		ErrrorHandling();
 	if(obtainedSymbol=="float" ||obtainedSymbol=="double"||obtainedSymbol=="int"||obtainedSymbol=="long"||obtainedSymbol=="short"||obtainedSymbol=="char"||obtainedSymbol=="boolean"){
 		DataType();
 		Dims();
 	}
-	else if (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+	else if (!IsReserveWord() && (isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_')){
 		Name();
 		Dims();
 	}
@@ -532,8 +588,29 @@ void Throws(){
 	}
 }
 //19
+void Parameter(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="float" ||obtainedSymbol=="double"||obtainedSymbol=="int"||obtainedSymbol=="long"||obtainedSymbol=="short"||obtainedSymbol=="char"||obtainedSymbol=="boolean"||isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Type();
+		Identifier();
+		while(obtainedSymbol==","){
+			Accept(",");
+			Type();
+			Identifier();
+		}
+	}
+}
+//18
+void ConstructorDeclarator(){
+	Identifier();
+	if(!isEnd && (obtainedSymbol=="(")){
+		Accept("(");
+		Parameter();
+		Accept(")");
+	}
+}
 //12
-
 void ImplementDeclaration(){
 	Accept("implements");
 	Name();
@@ -575,5 +652,5 @@ void PackageDeclaration(){
 }
 void TestProcedure()
 {
-	ImplementDeclaration();
+	InstanceOf();
 }

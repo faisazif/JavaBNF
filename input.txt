@@ -1,5 +1,1 @@
-
-
-
-
-implements fais.fais,======
+instanceof default
