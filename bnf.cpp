@@ -16,6 +16,7 @@ bool isEnd, haveSpace, isReserved;
 void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();void DimExpr(); void Dims();
 void Expression();void DataType(); void Type(); void UnaryExpression(); void MultiplicativeExpression(); void AdditiveExpression();
 void ShiftExpression(); void RelationalExpression(); void EqualityExpression(); void AndExpression(); void OrExpression();
+void ConditionalAndExpression(); void ConditionalOrExpression(); void ConditionalExpression(); void ArgumentList();
 void Accept(std::string); void TestProcedure();
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
@@ -666,17 +667,59 @@ void AndExpression(){
 	EqualityExpression();
 	And();
 }
-//97
+//95
 void Or(){
 	if(obtainedSymbol=="^"){
 		Accept(obtainedSymbol);
 		OrExpression();
 	}
 }
-//96
+//94
 void OrExpression(){
 	AndExpression();
 	Or();
+}
+//93
+void ConditionalAnd(){
+	if(isEnd)
+	return;
+	if(obtainedSymbol=="&&"){
+		Accept(obtainedSymbol);
+		ConditionalAndExpression();
+	}
+}
+//92
+void ConditionalAndExpression(){
+	OrExpression();
+	ConditionalAnd();
+}
+//91
+void ConditionalOr(){
+	if(obtainedSymbol=="||"){
+		Accept(obtainedSymbol);
+		ConditionalOrExpression();
+	}
+}
+//90
+void ConditionalOrExpression(){
+	ConditionalAndExpression();
+	ConditionalOr();
+}
+//89
+void Conditional(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="?"){
+		Accept("?");
+		Expression();
+		Accept(":");
+		ConditionalExpression();
+	}
+}
+//88
+void ConditionalExpression(){
+	ConditionalOrExpression();
+	Conditional();
 }
 //87
 void AssignmentOperator(){
@@ -684,6 +727,27 @@ void AssignmentOperator(){
 		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
+}
+//86
+void Assignment(){
+	Primary();
+	AssignmentOperator();
+	Expression();
+}
+//85
+void Expression(){
+	if(isEnd)
+		ErrrorHandling();
+	std::string petik = "";
+	char x = '"';
+	petik += x;
+	if(obtainedSymbol=="this" || obtainedSymbol=="(" || obtainedSymbol=="new" || obtainedSymbol=="super" || obtainedSymbol==petik ||
+	obtainedSymbol=="true" || obtainedSymbol=="false" || obtainedSymbol=="null" || obtainedSymbol=="." || isdigit(obtainedSymbol.at(0)) ||
+	isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Assignment();
+	}
+	else
+		ConditionalExpression();
 }
 //76
 void Cont(){
@@ -816,5 +880,5 @@ void PackageDeclaration(){
 }
 void TestProcedure()
 {
-	BooleanLiteral();
+	Expression();
 }
