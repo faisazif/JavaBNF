@@ -16,8 +16,8 @@ bool isEnd, haveSpace, isReserved;
 void Identifier(); void DecimalNumeral();void StringCharacters();void StringLiteral();void CharacterLiteral();void DimExpr(); void Dims();
 void Expression();void DataType(); void Type(); void UnaryExpression(); void MultiplicativeExpression(); void AdditiveExpression();
 void ShiftExpression(); void RelationalExpression(); void EqualityExpression(); void AndExpression(); void OrExpression();
-void ConditionalAndExpression(); void ConditionalOrExpression(); void ConditionalExpression(); void ArgumentList();
-void Accept(std::string); void TestProcedure();
+void ConditionalAndExpression(); void ConditionalOrExpression(); void ConditionalExpression(); void ArgumentList(); void Block();
+void Accept(std::string); void TestProcedure(); void UnaryExpression2(); void CastExpression(); void Parameter(); void StatementExpression();
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
 		haveSpace = true;
@@ -139,6 +139,9 @@ void GetSymbol(){
 				evaluatedCol++;
 				obtainedSymbol += c;
 				peekC = inputFile.peek();
+			}
+			if(obtainedSymbol=="else" && peekC==' '){
+				
 			}
 		}
 		else if(isdigit(c)){
@@ -557,7 +560,22 @@ void PostCrementExpression(){
 }
 //112 
 void UnaryExpression2(){
-	
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="~"){
+		Accept(obtainedSymbol);
+		PostCrementExpression();
+	}
+	else if(obtainedSymbol=="!"){
+		Accept(obtainedSymbol);
+		BooleanLiteral();
+	}
+	else if(obtainedSymbol=="("){
+		CastExpression();
+	}
+	else{
+		PostCrementExpression();
+	}
 }
 //111 
 void PreCrementExpression(){
@@ -568,10 +586,21 @@ void PreCrementExpression(){
 }
 //110 
 void UnaryExpression(){
-	
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="+"||obtainedSymbol=="-"){
+		Accept(obtainedSymbol);
+		Operand();
+	}
+	else
+		UnaryExpression2();
 }
 //109 
 void CastExpression(){
+	Accept("(");
+	DataType();
+	Accept(")");
+	UnaryExpression();
 }
 //109
 void Multi(){
@@ -749,6 +778,59 @@ void Expression(){
 	else
 		ConditionalExpression();
 }
+//84
+void Finally(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="finally"){
+		Accept(obtainedSymbol);
+		Block();
+	}
+}
+//83
+void CatchClause(){
+	Accept("catch");
+	Accept("(");
+	Parameter();
+	Accept(")");
+	Block();
+}
+//82
+void Catches(){
+	while(!isEnd && obtainedSymbol=="catch"){
+		CatchClause();
+	}
+}
+//81
+void TryStatement(){
+	Accept("try");
+	Block();
+	Catches();
+	Finally();
+}
+//80
+void SynchronizedStatement(){
+	Accept("synchronized");
+	Accept("(");
+	Expression();
+	Accept(")");
+	Block();
+}
+//79
+void ThrowsStatement(){
+	Accept("throw");
+	Expression();
+	Accept(";");
+}
+//78
+void Expr(){
+}
+//77
+void ReturnStatement(){
+	Accept("return");
+	Expr();
+	Accept(";");
+}
 //76
 void Cont(){
 	if(isEnd)
@@ -769,6 +851,58 @@ void BreakStatement(){
 	Cont();
 	Accept(";");
 }
+//73
+void StatementExpressionList(){
+	StatementExpression();
+	while(!isEnd && obtainedSymbol==","){
+		Accept(",");
+		StatementExpression();
+	}
+}
+//72
+void ForUpdate(){
+	
+}
+//71
+void ForInit(){
+	
+}
+//70
+void ForStatement(){
+	Accept("for");
+	Accept("(");
+	ForInit();
+	Accept(";");
+	Expr();
+	Accept(";");
+	ForUpdate();
+	Accept(")");
+	Statement();
+}
+//69
+void DoStatement(){
+	Accept("do");
+	Statement();
+	Accept("while");
+	Accept("(");
+	Expression();
+	Accept(")");
+	Accept(";");
+}
+//68
+void WhileStatement(){
+	Accept("while");
+	Accept("(");
+	Expression();
+	Accept(")");
+	Statement();
+}
+//67
+void SwitchLabel(){
+	Accept("case");
+	Expression();
+	Accept(":");
+}
 //66
 void SwitchLabels(){
 	if(isEnd)
@@ -778,8 +912,67 @@ void SwitchLabels(){
 		Accept(":");
 	}
 }
+//65
+void SwitchBlockStatementGroups(){
+	while(!isEnd && (obtainedSymbol=="case" || obtainedSymbol=="default")){
+		SwitchLabel();
+		BlockStatements();
+	}
+}
+//64
+void SwitchBlock(){
+	while(!isEnd && obtainedSymbol=="case"){
+		SwitchBlockStatementGroups();
+		SwitchLabels();
+	}
+}
+//63
+void SwitchStatement(){
+	Accept("switch");
+	Accept("(");
+	Expression();
+	Accept(")");
+	SwitchBlock();
+}
+//62
+void FinalElseStatement(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="else"){
+		Accept(obtainedSymbol);
+		Statement();
+	}
+}
+//61
+void ElseIfStatements(){
+	While(!isEnd && obtainedSymbol=="else if"){
+		Accept(obtainedSymbol);
+		Accept("(");
+		Expression();
+		Accept(")");
+		StatementExpressionList();
+	}
+}
+//60
+void IfStatement(){
+	Accept("if");
+	Accept("(");
+	Expression();
+	Accept(")");
+	Statement();
+	ElseIfStatements();
+	FinalElseStatement();
+}
+//59
+void Statement(){
+	
+}
 //55 
 void BlockStatement(){
+	
+}
+//54
+void Block(){
 	
 }
 //53
