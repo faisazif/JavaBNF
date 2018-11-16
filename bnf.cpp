@@ -18,6 +18,8 @@ void Expression();void DataType(); void Type(); void UnaryExpression(); void Mul
 void ShiftExpression(); void RelationalExpression(); void EqualityExpression(); void AndExpression(); void OrExpression();
 void ConditionalAndExpression(); void ConditionalOrExpression(); void ConditionalExpression(); void ArgumentList(); void Block();
 void Accept(std::string); void TestProcedure(); void UnaryExpression2(); void CastExpression(); void Parameter(); void StatementExpression();
+void Statement(); void BlockStatement(); void BlockStatements(); void VariableDeclarations(); void ParameterList(); void MethodDeclarator();
+void Throws(); void VariableDeclaration(); void FieldDeclaration();
 void SkipBlanks(){
 	while(c==' ' || c=='\n' || c=='\t'){
 		haveSpace = true;
@@ -465,7 +467,22 @@ void ArrayCreationExpression(){
 }
 //120
 void ArgumentList(){
-	Expression();
+	if(isEnd)
+		return;
+	std::string petik = "";
+	char x = '"';
+	petik += x;
+	if(obtainedSymbol=="this" || obtainedSymbol=="(" || obtainedSymbol=="new" || obtainedSymbol=="super" || obtainedSymbol==petik ||
+	obtainedSymbol=="true" || obtainedSymbol=="false" || obtainedSymbol=="null" || obtainedSymbol=="." || isdigit(obtainedSymbol.at(0)) ||
+	isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_' || obtainedSymbol=="+" || obtainedSymbol=="-"
+	|| obtainedSymbol=="~" || obtainedSymbol=="!" || obtainedSymbol=="(" ||isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || 
+	obtainedSymbol.at(0) == '_'){
+		Expression();
+		while(!isEnd && obtainedSymbol==","){
+			Accept(",");
+			Expression();
+		}
+	}
 }
 //119
 void ArrayAndClassCreationExpression(){
@@ -824,6 +841,18 @@ void ThrowsStatement(){
 }
 //78
 void Expr(){
+	if(isEnd)
+		return;
+	std::string petik = "";
+	char x = '"';
+	petik += x;
+	if(obtainedSymbol=="this" || obtainedSymbol=="(" || obtainedSymbol=="new" || obtainedSymbol=="super" || obtainedSymbol==petik ||
+	obtainedSymbol=="true" || obtainedSymbol=="false" || obtainedSymbol=="null" || obtainedSymbol=="." || isdigit(obtainedSymbol.at(0)) ||
+	isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_' || obtainedSymbol=="+" || obtainedSymbol=="-"
+	|| obtainedSymbol=="~" || obtainedSymbol=="!" || obtainedSymbol=="(" ||isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || 
+	obtainedSymbol.at(0) == '_'){
+		Expression();
+	}
 }
 //77
 void ReturnStatement(){
@@ -945,7 +974,7 @@ void FinalElseStatement(){
 }
 //61
 void ElseIfStatements(){
-	While(!isEnd && obtainedSymbol=="else if"){
+	while(!isEnd && obtainedSymbol=="else if"){
 		Accept(obtainedSymbol);
 		Accept("(");
 		Expression();
@@ -965,10 +994,57 @@ void IfStatement(){
 }
 //59
 void Statement(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol==";")
+		Accept(";");
+	else if(obtainedSymbol=="switch")
+		SwitchStatement();
+	else if(obtainedSymbol=="do")
+		DoStatement();
+	else if(obtainedSymbol=="break")
+		BreakStatement();
+	else if(obtainedSymbol=="continue")
+		ContinueStatement();
+	else if(obtainedSymbol=="return")
+		ReturnStatement();
+	else if(obtainedSymbol=="synchronized")
+		SynchronizedStatement();
+	else if(obtainedSymbol=="throw")
+		ThrowsStatement();
+	else if(obtainedSymbol=="try")
+		TryStatement();
+	else if(obtainedSymbol=="if")
+		IfStatement();
+	else if(obtainedSymbol=="while")
+		WhileStatement();
+	else if(obtainedSymbol=="for")
+		ForStatement();
+	else
+		Block();
+}
+//58
+void StatementExpression(){
 	
 }
-//55 
+//57
+void LocalVariableDeclaration(){
+	Type();
+	VariableDeclarations();
+	Accept(";");
+}
+//56
 void BlockStatement(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="float" ||obtainedSymbol=="double"||obtainedSymbol=="int"||obtainedSymbol=="long"||obtainedSymbol=="short"||obtainedSymbol=="char"||obtainedSymbol=="boolean" || isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		DataType();
+	}
+	else
+		Statement();
+}
+//55
+void BlockStatements(){
 	
 }
 //54
@@ -996,6 +1072,259 @@ void Type(){
 	}
 	else
 		ErrrorHandling();
+}
+//50
+void ArrayInitializer(){
+	std::string petik = "";
+	char x = '"';
+	petik += x;
+	while(!isEnd && (obtainedSymbol=="this" || obtainedSymbol=="(" || obtainedSymbol=="new" || obtainedSymbol=="super" || obtainedSymbol==petik ||
+	obtainedSymbol=="true" || obtainedSymbol=="false" || obtainedSymbol=="null" || obtainedSymbol=="." || isdigit(obtainedSymbol.at(0)) ||
+	isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_' || obtainedSymbol=="+" || obtainedSymbol=="-"
+	|| obtainedSymbol=="~" || obtainedSymbol=="!" || obtainedSymbol=="(" ||isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || 
+	obtainedSymbol.at(0) == '_')){
+		ArgumentList();
+	}
+}
+//49
+void ConstantDeclaration(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="final"){
+		Accept(obtainedSymbol);
+		Type();
+		VariableDeclaration();
+		Accept(";");
+	}
+	else{
+		Type();
+		VariableDeclaration();
+		Accept(";");
+	}
+}
+//48
+void ConstantAndAbstractMethod4(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="("){
+		Accept("(");
+		ParameterList();
+		Accept(")");
+	}
+}
+//47
+void ConstantAndAbstractMethod3(){
+	Identifier();
+	ConstantAndAbstractMethod4();
+}
+//46
+void ConstantAndAbstractMethod2(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="void"){
+		Accept(obtainedSymbol);
+		MethodDeclarator();
+		Throws();
+		Accept(";");
+	}
+	else{
+		Type();
+		ConstantAndAbstractMethod3();
+	}
+}
+//45
+void ConstantAndAbstractMethod(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="static"){
+		Accept(obtainedSymbol);
+		ConstantDeclaration();
+	}
+	else if(obtainedSymbol=="abstract"){
+		Accept(obtainedSymbol);
+		//AbstractMethodDeclaration();
+	}
+}
+//44
+void InterfaceMemberDeclaraion(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="public")
+		Accept(obtainedSymbol);
+	ConstantAndAbstractMethod();
+}
+//43
+void InterfaceBody(){
+	
+}
+//42
+void ExtendsInterfaces(){
+	if(isEnd)
+		return;
+	if(isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
+		Name();
+		while(!isEnd && obtainedSymbol==","){
+			Accept(obtainedSymbol);
+			Name();
+		}
+	}
+}
+//41
+void InterfaceDeclaration(){
+	Accept("interface");
+	Identifier();
+	Accept("extends");
+	ExtendsInterfaces();
+	InterfaceBody();
+}
+//40
+void ReturnType(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="void")
+		Accept(obtainedSymbol);
+	else
+		Type();
+}
+//39
+void ParameterList(){
+	
+}
+//38
+void MethodDeclarator(){
+	Identifier();
+	Accept("(");
+	ParameterList();
+	Accept(")");
+}
+//36
+void AbstractMethodHeader(){
+	ReturnType();
+	MethodDeclarator();
+	Throws();
+	Accept(";");
+}
+//35
+void MethodHeader(){
+	MethodDeclarator();
+	Throws();
+}
+//34
+void MethodDeclaration(){
+	MethodHeader();
+	Block();
+}
+//33
+void VariableDeclaration3(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="="){
+		Accept(obtainedSymbol);
+		ArrayInitializer();
+	}
+}
+//32
+void VariableDeclaration2(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="="){
+		Accept(obtainedSymbol);
+		Expression();
+	}
+	else if(obtainedSymbol=="["){
+		Accept("[");
+		Accept("]");
+		VariableDeclaration3();
+	}
+}
+//31
+void VariableDeclaration(){
+	Identifier();
+	VariableDeclaration2();
+}
+//30
+void VariableDeclarations(){
+	VariableDeclaration();
+	while(!isEnd && obtainedSymbol==","){
+		Accept(",");
+		VariableDeclaration();
+	}
+}
+//29
+void FieldOrMethod(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="("){
+		Accept("(");
+		ParameterList();
+		Accept(")");
+		Throws();
+		Block();
+	}
+	else{
+		VariableDeclaration2();
+		while(!isEnd && obtainedSymbol==","){
+			VariableDeclaration();
+		}
+	}
+}
+//28
+void FieldOrMethodDeclaration(){
+	Identifier();
+	FieldOrMethod();
+}
+//27
+void MemberDeclaration4(){
+	
+}
+//26
+void MemberDeclaration3(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="synchronized"){
+		Accept(obtainedSymbol);
+		MethodDeclaration();
+	}
+	else{
+		MemberDeclaration4();
+	}
+}
+//25
+void MemberDeclaration2(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="final"){
+		Accept(obtainedSymbol);
+		MemberDeclaration3();
+	}
+	else if(obtainedSymbol=="volatile"){
+		Accept(obtainedSymbol);
+		FieldDeclaration();
+	}
+	else
+		MemberDeclaration3();
+}
+//24
+void FieldDeclaration(){
+	Type();
+	VariableDeclarations();
+	Accept(";");
+}
+//23
+void ConstructorInvocation(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="this" || obtainedSymbol=="super"){
+		Accept(obtainedSymbol);
+		Accept("(");
+		ArgumentList();
+		Accept(")");
+		Accept(";");
+	}
+}
+//22
+void ConstructorBody(){
+	
 }
 //21
 void Throws(){
@@ -1031,24 +1360,99 @@ void ConstructorDeclarator(){
 		Accept(")");
 	}
 }
+//18
+void ConstructorDeclaration(){
+	ConstructorDeclarator();
+	Throws();
+	ConstructorBody();
+}
+//17
+void MemberDeclaration(){
+	
+}
+//16
+void StaticMemberDeclaration(){
+
+}
+//15
+void ClassBodyDeclaratioin(){
+	
+}
+//14
+void ClassBody(){
+	
+}
 //13
 void ImplementDeclaration(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="implements"){
 	Accept("implements");
 	Name();
 	while(!isEnd && obtainedSymbol==","){
 		Accept(",");
 		Name();
 	}
+	}
 }
 //12
 void SuperDeclaration(){
+	if(isEnd)
+		return;
+	if(obtainedSymbol=="extends"){
 	Accept("extends");
 	Name();
+	}
+}
+//11
+void SuperAndInterfaceDeclaration(){
+	SuperDeclaration();
+	ImplementDeclaration();
 }
 //10
 void FinalModifier(){
 	if(obtainedSymbol=="final")
 		Accept(obtainedSymbol);
+}
+//9
+void ClassDeclaration(){
+	Accept("class");
+	Identifier();
+	SuperAndInterfaceDeclaration();
+	ClassBody();
+}
+//8
+void ClassOrInterface(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="class")
+		ClassDeclaration();
+	else if(obtainedSymbol=="interface")
+		InterfaceDeclaration();
+}
+//7
+void TypeDeclaration2(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="abstract"){
+		Accept(obtainedSymbol);
+		ClassOrInterface();
+	}
+	else if(obtainedSymbol=="final"){
+		Accept(obtainedSymbol);
+		ClassDeclaration();
+	}
+	else if(obtainedSymbol=="class" || obtainedSymbol=="interface"){
+		ClassOrInterface();
+	}
+}
+//5
+void TypeDeclaration(){
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="public")
+		Accept(obtainedSymbol);
+	TypeDeclaration2();
 }
 //4
 void ImportAll(){
@@ -1069,6 +1473,18 @@ void PackageDeclaration(){
 		Accept(obtainedSymbol);
 		Name();
 		Accept(";");
+	}
+}
+//1
+void CompilationUnit(){
+	if(isEnd)
+		return;
+	PackageDeclaration();
+	while(!isEnd && obtainedSymbol=="import"){
+		ImportDeclaration();
+	}
+	while(!isEnd && (obtainedSymbol=="public" || obtainedSymbol=="abstract" || obtainedSymbol=="final" || obtainedSymbol=="class" || obtainedSymbol=="interface")){
+		TypeDeclaration();
 	}
 }
 void TestProcedure()
