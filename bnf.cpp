@@ -9,6 +9,7 @@ int errorLine;
 int errorCol; 
 int evaluatedCol, evaluatedLine;
 int defaultCol; 
+int testIndex;
 ifstream inputFile;
 char c, peekC;
 bool isEnd, haveSpace, isReserved;
@@ -143,7 +144,30 @@ void GetSymbol(){
 				peekC = inputFile.peek();
 			}
 			if(obtainedSymbol=="else" && peekC==' '){
-				
+				inputFile.get(c);
+				evaluatedCol++;
+				peekC = inputFile.peek();
+				if(peekC=='i'){
+					inputFile.get(c);
+					evaluatedCol++;
+					peekC = inputFile.peek();
+					if(peekC=='f'){
+						inputFile.get(c);
+						evaluatedCol++;
+						obtainedSymbol+=" if";
+						peekC = inputFile.peek();
+						while(IsEnder(peekC)==false && (isalpha(peekC) || peekC=='$' || peekC=='_')) {//while there are still no divider cahrs
+							inputFile.get(c);
+							evaluatedCol++;
+							obtainedSymbol += c;
+							peekC = inputFile.peek();
+						}
+					}
+					else{
+						inputFile.putback('i');
+						evaluatedCol--;
+					}
+				}
 			}
 		}
 		else if(isdigit(c)){
@@ -773,6 +797,7 @@ void AssignmentOperator(){
 		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
+	printf("Testis: %s\n",obtainedSymbol.c_str());
 }
 //86
 void Assignment(){
@@ -792,8 +817,9 @@ void Expression(){
 	isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'){
 		Assignment();
 	}
-	else
+	else{
 		ConditionalExpression();
+	}
 }
 //84
 void Finally(){
@@ -1025,7 +1051,34 @@ void Statement(){
 }
 //58
 void StatementExpression(){
-	
+	if(isEnd)
+		ErrrorHandling();
+	if(obtainedSymbol=="this"){
+		Accept(obtainedSymbol);
+		MethodAccess();
+	}
+	else if(obtainedSymbol=="("){
+		Accept(obtainedSymbol);
+		Expression();
+		Accept(")");
+	}
+	else if(obtainedSymbol=="new"){
+		Accept(obtainedSymbol);
+		ArrayAndClassCreationExpression();
+		MethodAccess();
+	}
+	else if(obtainedSymbol=="super"){
+		Accept(obtainedSymbol);
+		MethodAccess();
+	}
+	else if(obtainedSymbol=="--" || obtainedSymbol=="++"){
+		Accept(obtainedSymbol);
+		UnaryExpression();
+	}
+	else if(obtainedSymbol=="--" || obtainedSymbol=="++"){
+		Accept(obtainedSymbol);
+		UnaryExpression();
+	}
 }
 //57
 void LocalVariableDeclaration(){
@@ -1489,5 +1542,5 @@ void CompilationUnit(){
 }
 void TestProcedure()
 {
-	Expression();
+	CompilationUnit();
 }
