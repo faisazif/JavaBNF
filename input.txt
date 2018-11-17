@@ -1,1 +1,2 @@
-i=4
+package fais.
+import ganteng.*;

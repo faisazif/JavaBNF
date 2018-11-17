@@ -5,6 +5,7 @@
 using namespace std;
 char symbol; 
 std::string obtainedSymbol; 
+std::string shouldBeSymbol; 
 int errorLine; 
 int errorCol; 
 int evaluatedCol, evaluatedLine;
@@ -41,8 +42,9 @@ void ErrrorHandling(){
 		printf("Rejected at line %d column %d.\nNo more symbol to read\n",errorLine, errorCol, obtainedSymbol.c_str());
 	else if(isReserved)
 		printf("Rejected at line %d column %d.\nSymbol: %s is reserved\n",errorLine, errorCol, obtainedSymbol.c_str());
-	else
-		printf("Rejected at line %d column %d.\nSymbol: %s\n",errorLine, errorCol, obtainedSymbol.c_str());
+	else{
+		printf("Rejected at line %d column %d.\nSymbol: %s\nSymbol should be: %s",errorLine, errorCol, obtainedSymbol.c_str(), shouldBeSymbol.c_str());
+	}
 	exit(0);
 }
 bool IsReserveWord(){
@@ -243,6 +245,8 @@ void Accept(std::string t){
 	else{
 		if(inputFile.eof())
 			isEnd = true;
+		else
+			shouldBeSymbol=t;
 		ErrrorHandling();
 	}
 }
