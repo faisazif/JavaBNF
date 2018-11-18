@@ -1,7 +1,9 @@
 package fais;
 import ganteng.*;
 
+class Fais{
+	Fais ganteng;
+	Motor motor;
 
-public class fais{
-   fren
 }
+>>>><><><><>>><===.,+_+_!@#(

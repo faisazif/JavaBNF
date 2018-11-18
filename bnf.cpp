@@ -71,7 +71,8 @@ bool IsEnder(char c){
 		return false;
 }
 void GetSymbol(){
-	printf("Accepted Symbol: %s\n",obtainedSymbol.c_str());//check what is accepted before
+	evaluatedCol = evaluatedLine = 0;
+	//printf("Accepted Symbol: %s\n",obtainedSymbol.c_str());//check what is accepted before
 	inputFile.get(c);
 	evaluatedCol++;
 	obtainedSymbol = "";
@@ -99,13 +100,41 @@ void GetSymbol(){
 					evaluatedCol++;
 					obtainedSymbol += c;
 					peekC = inputFile.peek();
+					if(peekC == '=')//for <<=, >>>=
+					{
+						inputFile.get(c);
+						evaluatedCol++;
+						obtainedSymbol += c;
+						peekC = inputFile.peek();
+					}
 				}
-				if((c=='<' ||c=='>') && peekC == '=')//for <<=, >>>=
+				else if(c=='<' && peekC=='<')//for <<
 				{
 					inputFile.get(c);
 					evaluatedCol++;
 					obtainedSymbol += c;
 					peekC = inputFile.peek();
+					if(peekC == '=')//for <<=, >>=
+					{
+						inputFile.get(c);
+						evaluatedCol++;
+						obtainedSymbol += c;
+						peekC = inputFile.peek();
+					}
+					else if(c=='>' && peekC=='>') //for >>>
+					{
+						inputFile.get(c);
+						evaluatedCol++;
+						obtainedSymbol += c;
+						peekC = inputFile.peek();
+						if(peekC == '=')//for >>>=
+						{
+							inputFile.get(c);
+							evaluatedCol++;
+							obtainedSymbol += c;
+							peekC = inputFile.peek();
+						}
+					}
 				}
 				return;
 			}
@@ -204,9 +233,9 @@ int main(){
 	
 	//GetOneWord
 	GetSymbol();
-	if(!isEnd)
-		TestProcedure();
-	/*
+	//if(!isEnd)
+	//	TestProcedure();
+	///*
 	//Check GetSymbol Parsings
 	{
 		while(!inputFile.eof())
@@ -797,7 +826,6 @@ void AssignmentOperator(){
 		Accept(obtainedSymbol);
 	else
 		ErrrorHandling();
-	printf("Testis: %s\n",obtainedSymbol.c_str());
 }
 //86
 void Assignment(){
@@ -1484,7 +1512,6 @@ void Parameter(){
 }
 //19
 void ConstructorDeclarator(){
-	printf("Testis: %s\n", obtainedSymbol.c_str());
 	Identifier();
 	Accept("(");
 	Parameter();
@@ -1536,10 +1563,11 @@ void ClassBodyDeclaration(){
 			StaticMemberDeclaration();
 		}
 	}
-	else if(obtainedSymbol=="final" || obtainedSymbol=="volatile" || obtainedSymbol=="synchronized" || obtainedSymbol=="void"){
+	else if(obtainedSymbol=="final" || obtainedSymbol=="volatile" || obtainedSymbol=="synchronized" || obtainedSymbol=="void" || ((isalpha(obtainedSymbol.at(0)) || obtainedSymbol.at(0)=='$' || obtainedSymbol.at(0) == '_'))){
+	printf("Testis: %s\n", obtainedSymbol.c_str());
 		MemberDeclaration2();
 	}
-	else{
+	else {
 		ConstructorDeclaration();
 	}
 }
